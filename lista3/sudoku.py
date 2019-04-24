@@ -24,21 +24,21 @@ def vertical():
 
 def print_constraints(Cs, indent, d):
     position = indent
-    print (indent - 1) * ' ',
+    print((indent - 1) * ' ', end=' ')
     for c in Cs:
-        print c + ',',
+        print(c + ',', end=' ')
         position += len(c)
         if position > d:
             position = indent
-            print
-            print (indent - 1) * ' ',
+            print()
+            print((indent - 1) * ' ', end=' ')
 
       
 def sudoku(assigments):
     variables = [ V(i,j) for i in range(9) for j in range(9)]
     
-    print ':- use_module(library(clpfd)).'
-    print 'solve([' + ', '.join(variables) + ']) :- '
+    print(':- use_module(library(clpfd)).')
+    print('solve([' + ', '.join(variables) + ']) :- ')
     
     
     cs = domains(variables) + vertical() + horizontal() #TODO: too weak constraints, add something!
@@ -46,10 +46,10 @@ def sudoku(assigments):
         cs.append( '%s #= %d' % (V(i,j), val) )
     
     print_constraints(cs, 4, 70),
-    print
-    print '    labeling([ff], [' +  ', '.join(variables) + ']).' 
-    print 
-    print ':- solve(X), write(X), nl.'       
+    print()
+    print('    labeling([ff], [' +  ', '.join(variables) + ']).') 
+    print() 
+    print(':- solve(X), write(X), nl.')       
 
 if __name__ == "__main__":
     row = 0

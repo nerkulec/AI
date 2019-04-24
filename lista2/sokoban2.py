@@ -46,11 +46,11 @@ class Pos:
     def __init__(self, a, b=None):
         self.x, self.y = a if b is None else (a, b)
     def __add__(self, other):
-        return Pos((self.x+other[0], self.y+other[1]))
+        return Pos(self.x+other[0], self.y+other[1])
     def __sub__(self, other):
-        return Pos((self.x-other[0], self.y-other[1]))
+        return Pos(self.x-other[0], self.y-other[1])
     def __neg__(self):
-        return Pos((-self.x, -self.y))
+        return Pos(-self.x, -self.y)
     def __eq__(self, other):
         return self.x == other[0] and self.y == other[1]
     def __getitem__(self, num):

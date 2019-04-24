@@ -36,4 +36,3 @@ for i in range(2, len(txt)):
 
 storms(rows, cols, triples)            
         
-
