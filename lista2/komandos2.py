@@ -1,18 +1,18 @@
 from heapq import heappush, heappop
 import numpy as np
 
-# Poprawiona poprawność, heura za słaba
+# Niepoprawny
+
+DEBUG_INFO = False
 
 class Board: #2d array of W, G
-    def __init__(self, board, comandos=None, goals=None, dist=None, leaps=0, shortcuts=0):
+    def __init__(self, board, comandos=None, goals=None, dist=None):
         self.width = len(board[0])
         self.height = len(board)
         self.board = board #stored row by row
         self.comandos = comandos
         self.goals = goals
         self.dist = dist
-        self.leaps = leaps
-        self.shortcuts = shortcuts
     def __getitem__(self, pos): #accessed (x,y)
         return self.board[pos[1]][pos[0]]
     def __setitem__(self, pos, val): #accessed (x,y)
@@ -33,16 +33,22 @@ class Board: #2d array of W, G
                 if new_pos in board and new_pos not in seen:
                     heappush(queue, (dist+1, new_pos))
                     seen.add(new_pos)
+        # self.draw_dists()
     def get_dist(self, pos):
         return self.dist[pos[1]][pos[0]]
     def copy(self):
-        return Board(self.board, self.comandos, self.goals, self.dist, self.leaps, self.shortcuts)
+        return Board(self.board, self.comandos, self.goals, self.dist)
     def __repr__(self):
         return self.board
     def draw(self):
         for y in range(self.height):
             for x in range(self.width):
                 print('K' if Pos(x,y) in self.comandos else 'G' if Pos(x,y) in self.goals else self.board[y][x], end='')
+            print()
+    def draw_dists(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                print(f'{self.dist[y][x]:0>2d} ', end='')
             print()
     def move(self, direction):
         d = [(1,0), (0,1), (-1,0), (0,-1)][direction]
@@ -76,7 +82,7 @@ def around(pos):
 def m_dist(a, b):
     return abs(a[0]-b[0]) + abs(a[1]-b[1])
 
-def search(board):
+def search(board, alpha=1):
     queue = []
     heappush(queue, (0, '', board))
     seen = set()
@@ -85,26 +91,30 @@ def search(board):
 
     depth = 0
     seen_size = 0
-    leaps_max = 10
-    shortcut_max = 100
     while queue:
         priority, history, board = heappop(queue)
         if all(comando in board.goals for comando in board.comandos):
             print(f'seen: {len(seen)}')
             return history
-        # if len(history) > depth:
-        #     depth = len(history)
-        #     print(f'depth: {depth}')
-        # if len(seen) >= seen_size:
-        #     print(f'seen: {seen_size}')
-        #     seen_size += 1000
+        if history == 'DDDRDD'[:len(history)]: #'DLDDRR'
+            # print(priority)
+            a = 1
+        if DEBUG_INFO:
+            if len(history) > depth:
+                depth = len(history)
+                print(f'depth: {depth}')
+            if len(seen) >= seen_size:
+                print(f'seen: {seen_size}')
+                seen_size += 1000
         for direction in range(4):
             new_board = board.copy()
             new_board.move(direction)
+            new_history = history+'RDLU'[direction]
+            if new_board.comandos == frozenset({(3, 4), (2, 4)}):
+                a = 1
             if new_board.comandos in seen:
                 continue
-            new_history = history+'RDLU'[direction]
-            new_priority = len(new_history) + heuristic(board)
+            new_priority = len(history) + heuristic(new_board)*alpha
             heappush(queue, (new_priority, new_history, new_board))
             seen.add(new_board.comandos)
     else:
@@ -114,7 +124,7 @@ def heuristic(board): #choose a comando that his distance to the nearest goal is
     return max(board.get_dist(c) for c in board.comandos)
     # return max(min(m_dist(comando, goal) for goal in board.goals) for comando in board.comandos)
 
-with open("zad_input.txt", "r") as in_f:
+with open("example.txt", "r") as in_f:
     board = []
     for line in in_f:
         board.append(list(line[:-1]))
@@ -137,5 +147,7 @@ with open("zad_input.txt", "r") as in_f:
     board.goals = goals
     board.set_dist()
     with open("zad_output.txt", "w") as out_f:
-        print(search(board), file=out_f)
+        # print(search(board, 1), file=out_f)
+        print(search(board, 1))
+        print(search(board, 0))
             
