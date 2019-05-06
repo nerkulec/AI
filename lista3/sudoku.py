@@ -1,8 +1,10 @@
+# wbite - pokazać
+
 import sys
 
 
 def V(i,j):
-    return 'V%d_%d' % (i,j)
+    return f'V{i}_{j}'
     
 def domains(Vs):
     return [ q + ' in 1..9' for q in Vs ]
@@ -11,16 +13,22 @@ def all_different(Qs):
     return 'all_distinct([' + ', '.join(Qs) + '])'
     
 def get_column(j):
-    return [V(i,j) for i in range(9)] 
+    return [V(i,j) for i in range(9)]
             
 def get_row(i):
-    return [V(i,j) for j in range(9)] 
+    return [V(i,j) for j in range(9)]
+
+def get_square(i,j):
+    return [V(x,y) for x in range(3*i, 3*(i+1)) for y in range(3*j, 3*(j+1))]
                         
 def horizontal():   
-    return [ all_different(get_row(i)) for i in range(9)]
+    return [all_different(get_row(i)) for i in range(9)]
 
 def vertical():
     return [all_different(get_column(j)) for j in range(9)]
+
+def squares():
+    return [all_different(get_square(i, j)) for i in range(3) for j in range(3)]
 
 def print_constraints(Cs, indent, d):
     position = indent
@@ -41,7 +49,7 @@ def sudoku(assigments):
     print('solve([' + ', '.join(variables) + ']) :- ')
     
     
-    cs = domains(variables) + vertical() + horizontal() #TODO: too weak constraints, add something!
+    cs = domains(variables) + vertical() + horizontal() + squares()
     for i,j,val in assigments:
         cs.append( '%s #= %d' % (V(i,j), val) )
     
@@ -61,7 +69,7 @@ if __name__ == "__main__":
             for i in range(9):
                 if x[i] != '.':
                     triples.append( (row,i,int(x[i])) ) 
-            row += 1          
+            row += 1
     sudoku(triples)
     
 """

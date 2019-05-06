@@ -1,3 +1,5 @@
+# wbite - pokazać
+
 import numpy as np
 
 # #- pewny pełny
