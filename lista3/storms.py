@@ -1,3 +1,5 @@
+# wbite - pokazać
+
 def B(i,j):
     return 'B_%d_%d' % (i,j)
 
@@ -17,7 +19,7 @@ def col(i, h):
     return [B(i,j) for j in range(h)]
 
 def squares(w, h):
-    return [square(i, j) for i in range(w-1) for j in range(h-1)]
+    return [square(i, j) for j in range(h-1) for i in range(w-1)]
 
 def srows(w, h):
     return [srow(i,j) for i in range(w-2) for j in range(h)]
@@ -43,17 +45,17 @@ def storms(rows_input, cols_input, triples):
     possible = [[0,0,0], [0,0,1], [0,1,1], [1,0,0], [1,0,1], [1,1,0], [1,1,1]] # all but 010
     possible_sq = [[0,0,0,0], [0,0,0,1], [0,0,1,0], [0,0,1,1], [0,1,0,0], [0,1,0,1], [1,0,0,0], [1,0,1,0], [1,1,0,0], [1,1,1,1]]
     for b in bs:
-        writeln(f'    {b} in 0..1, ')
+        output.write(f'    {b} in 0..1, ')
     for s in squares(w, h):
         writeln(p_in(s, possible_sq))
-    for r in srows(w, h):
-        writeln(p_in(r, possible))
     for c in scols(w, h):
         writeln(p_in(c, possible))
+    for r in srows(w, h):
+        writeln(p_in(r, possible))
     for j in range(h):
-        writeln(sums_to(row(j, w), rows_input[j]))
+        writeln(sums_to(row(j, w), cols_input[j]))
     for i in range(w):
-        writeln(sums_to(col(i, h), cols_input[i]))
+        writeln(sums_to(col(i, h), rows_input[i]))
     for c in triples:
         writeln(f'    {B(c[0], c[1])} #= {c[2]},')
 
@@ -64,16 +66,16 @@ def storms(rows_input, cols_input, triples):
 def writeln(s):
     output.write(s + '\n')
 
-txt = open('zad_input.txt').readlines()
-output = open('zad_output.txt', 'w')
+with open('zad_input.txt') as input_file:
+    txt = input_file.readlines()
+with open('zad_output.txt', 'w') as output:
+    rows_input = list(map(int, txt[0].split()))
+    cols_input = list(map(int, txt[1].split()))
+    triples = []
 
-rows_input = list(map(int, txt[0].split()))
-cols_input = list(map(int, txt[1].split()))
-triples = []
+    for i in range(2, len(txt)):
+        if txt[i].strip():
+            triples.append(list(map(int, txt[i].split())))
 
-for i in range(2, len(txt)):
-    if txt[i].strip():
-        triples.append(list(map(int, txt[i].split())))
+    storms(rows_input, cols_input, triples)            
 
-storms(rows_input, cols_input, triples)            
-        
