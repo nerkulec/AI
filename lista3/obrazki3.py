@@ -2,6 +2,7 @@
 
 import numpy as np
 from tqdm import tqdm
+from itertools import product
 
 # #- pewny pełny
 # .- pewny pusty
@@ -37,13 +38,20 @@ def legal(arr, row):
             return False
     return True
 
-def step(image, rows, cols, all_rows, all_cols):
+def step(image, rows, cols, all_rows, all_cols, changed):
     image = deepcopy(image)
     width = len(cols)
     height = len(rows)
     anything_changed = False
+    changes = []
+    if changed == 'all':
+        row_nums = range(height)
+        col_nums = range(width)
+    else:
+        row_nums = set(c[1] for c in changed)
+        col_nums = set(c[0] for c in changed)
     # rows
-    for row_num in range(height):
+    for row_num in row_nums:
         row = image[row_num]
         row_ch = rows[row_num]
         len_row = len(row)
@@ -56,17 +64,19 @@ def step(image, rows, cols, all_rows, all_cols):
                 all_full = [all_full[x] and arr[x]=='#' for x in range(len_row)]
                 all_empty = [all_empty[x] and arr[x]=='.' for x in range(len_row)]
         if not any_legal:
-            return image, False, anything_changed
+            return image, False, anything_changed, changes
         for x in range(len_row):
             if all_full[x] and image[row_num][x] != '#':
                 image[row_num][x] = '#'
+                changes.append((x, row_num))
                 anything_changed = True
             elif all_empty[x] and image[row_num][x] != '.':
                 image[row_num][x] = '.'
+                changes.append((x, row_num))
                 anything_changed = True
     # cols
     imageT = T(image) #transpose
-    for col_num in range(width):
+    for col_num in col_nums:
         col = imageT[col_num]
         col_ch = cols[col_num]
         len_col = len(col)
@@ -79,31 +89,37 @@ def step(image, rows, cols, all_rows, all_cols):
                 all_full = [all_full[y] and arr[y] == '#' for y in range(len_col)]
                 all_empty = [all_empty[y] and arr[y] == '.' for y in range(len_col)]
         if not any_legal:
-            return image, False, anything_changed
+            return image, False, anything_changed, changes
         for y in range(len_col):
             if all_full[y] and image[y][col_num] != '#':
                 image[y][col_num] = '#'
+                changes.append((col_num, y))
                 anything_changed = True
             elif all_empty[y] and image[y][col_num] != '.':
                 image[y][col_num] = '.'
+                changes.append((col_num, y))
                 anything_changed = True
-    return image, True, anything_changed
+    return image, True, anything_changed, changes
 
-def filter_domains(image, all_rows, all_cols):
+def filter_domains(image, all_rows, all_cols, debug=False):
     imageT = T(image)
     all_rows = [[r for r in all_rows[y] if legal(r, image[y])] for y in range(len(all_rows))]
     all_cols = [[c for c in all_cols[x] if legal(c, imageT[x])] for x in range(len(all_cols))]
-    print(f'possible rows: {[len(r) for r in all_rows]}')
-    print(f'possible cols: {[len(c) for c in all_cols]}')
+    if debug:
+        possible_rows = [len(r) for r in all_rows]
+        possible_cols = [len(c) for c in all_cols]
+        print(f'possible rows: {possible_rows}')
+        print(f'possible cols: {possible_cols}')
+        print(f'sum: {sum(possible_rows) + sum(possible_cols)}')
     return all_rows, all_cols
 
 def consequences(image, rows, cols, all_rows, all_cols): # returns image, solved, possible
     possible = True
+    changes = 'all'
     while any(any(p == '?' for p in row) for row in image):
-        image, possible, anything_changed = step(image, rows, cols, all_rows, all_cols)
+        image, possible, anything_changed, changes = step(image, rows, cols, all_rows, all_cols, changes)
         if not possible or not anything_changed:
             return image, False, possible
-        all_rows, all_cols = filter_domains(image, all_rows, all_cols)
     return image, True, possible
 
 def nonogram(rows, cols):
@@ -121,22 +137,28 @@ def nonogram(rows, cols):
     draw(image)
     return image
 
-def backtrack(image, rows, cols, all_rows, all_cols):
-    for y in range(len(rows)):
-        for x in tqdm(range(len(cols))):
-            if image[y][x] == '?':
-                image[y][x] = '#'
+def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=25):
+    points = product(range(len(cols)), range(len(rows)))
+    points = sorted(points, key=lambda p: -abs(p[0]-len(cols)/2) - abs(p[1]-len(rows)/2))
+    counter = 0
+    for x,y in points:
+        if image[y][x] == '?':
+            image[y][x] = '#'
+            _, _, possible = consequences(image, rows, cols, all_rows, all_cols)
+            image[y][x] = '.'
+            if possible:
                 _, _, possible = consequences(image, rows, cols, all_rows, all_cols)
-                image[y][x] = '.'
-                if possible:
-                    _, _, possible = consequences(image, rows, cols, all_rows, all_cols)
-                    if not possible:
-                        image[y][x] = '#'
-                    else:
-                        image[y][x] = '?'
-        image, solved, possible = consequences(image, rows, cols, all_rows, all_cols)
-        all_rows, all_cols = filter_domains(image, all_rows, all_cols)
-        draw(image)
+                if not possible:
+                    image[y][x] = '#'
+                else:
+                    image[y][x] = '?'
+        if counter >= filter_interval:
+            all_rows, all_cols = filter_domains(image, all_rows, all_cols, True)
+            image, solved, possible = consequences(image, rows, cols, all_rows, all_cols)
+            if solved: break
+            draw(image)
+            counter = -1
+        counter += 1
                 
     image, solved, _ = consequences(image, rows, cols, all_rows, all_cols)
     return image, solved
