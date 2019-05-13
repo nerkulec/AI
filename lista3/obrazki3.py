@@ -207,15 +207,23 @@ def nonogram(rows, cols):
     image, _ = consequences(image, rows, cols, all_rows, all_cols, safe=True)
     draw(image)
     image, _ = backtrack(image, rows, cols, all_rows, all_cols)
-    image, _ = backtrack(image, rows, cols, all_rows, all_cols)
     draw(image)
     return image
 
-def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=25):
+def get_neigbors(x, y, image):
+    neighbors = []
+    for dx, dy in [(1,0), (0,1), (-1,0), (0,-1)]:
+        nx, ny = x+dx, y+dy
+        if 0<=nx<len(image[0]) and 0<=ny<len(image) and image[ny][nx]=='?':
+            neighbors.append((nx, ny))
+    return neighbors
+
+def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=10):
     points = product(range(len(cols)), range(len(rows)))
-    points = sorted(points, key=lambda p: min(-abs(p[0]-len(cols)/2), -abs(p[1]-len(rows)/2)))
+    points = [(1+min(p[0], len(image[0])-1-p[0], p[1], len(image)-1-p[1]), p) for p in points]
     counter = 0
-    for x,y in points:
+    while points:
+        _, (x, y) = heappop(points)
         if image[y][x] == '?':
             image[y][x] = '#'
             _, possible = consequences(image, rows, cols, all_rows, all_cols)
@@ -224,8 +232,11 @@ def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=25):
                 _, possible = consequences(image, rows, cols, all_rows, all_cols)
                 if not possible:
                     image[y][x] = '#'
+                    points.extend([(0,n) for n in get_neigbors(x, y, image)])
                 else:
                     image[y][x] = '?'
+            else:
+                points.extend(get_neigbors(x, y, image))
         if counter >= filter_interval:
             all_rows, all_cols = filter_domains(image, all_rows, all_cols, True)
             image, possible = consequences(image, rows, cols, all_rows, all_cols, safe=True)
