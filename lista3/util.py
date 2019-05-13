@@ -7,7 +7,7 @@ def timeit(func, runs={}, times={}):
     if func=='SHOW':
         sum_times = sum(times[k] for k in times)
         for fun, t in times.items():
-            print(f'{fun:14} took {t*1.0:3.2f} seconds in {runs[fun]:9} runs which is {t/sum_times:.2%} total time')
+            print(f'{fun:14} took {t*1.0:>5.2f} seconds in {runs[fun]:8} runs which is {t/sum_times:>6.2%} total time')
     else:
         name = func.__name__
         if name not in runs:

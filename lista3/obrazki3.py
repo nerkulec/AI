@@ -42,70 +42,70 @@ def legal(arr, row):
             return False
     return True
 
-def step(image, rows, cols, all_rows, all_cols, changed):
-    image = deepcopy(image)
-    width = len(cols)
-    height = len(rows)
-    anything_changed = False
-    changes = []
-    if changed == 'all':
-        row_nums = range(height)
-        col_nums = range(width)
-    else:
-        row_nums = set(c[1] for c in changed)
-        col_nums = set(c[0] for c in changed)
-    # rows
-    for row_num in row_nums:
-        row = image[row_num]
-        row_ch = rows[row_num]
-        len_row = len(row)
-        all_full = [True for _ in range(len_row)]
-        all_empty = [True for _ in range(len_row)]
-        any_legal = False
-        for arr in all_rows[row_num]:
-            if legal(arr, row):
-                any_legal = True
-                all_full = [all_full[x] and arr[x]=='#' for x in range(len_row)]
-                all_empty = [all_empty[x] and arr[x]=='.' for x in range(len_row)]
-        if not any_legal:
-            return image, False, anything_changed, changes
-        for x in range(len_row):
-            if all_full[x] and image[row_num][x] != '#':
-                image[row_num][x] = '#'
-                changes.append((x, row_num))
-                anything_changed = True
-            elif all_empty[x] and image[row_num][x] != '.':
-                image[row_num][x] = '.'
-                changes.append((x, row_num))
-                anything_changed = True
-    # cols
-    imageT = T(image) #transpose
-    for col_num in col_nums:
-        col = imageT[col_num]
-        col_ch = cols[col_num]
-        len_col = len(col)
-        all_full = [True for _ in range(len_col)]
-        all_empty = [True for _ in range(len_col)]
-        any_legal = False
-        for arr in all_cols[col_num]:
-            if legal(arr, col):
-                any_legal = True
-                all_full = [all_full[y] and arr[y] == '#' for y in range(len_col)]
-                all_empty = [all_empty[y] and arr[y] == '.' for y in range(len_col)]
-        if not any_legal:
-            return image, False, anything_changed, changes
-        for y in range(len_col):
-            if all_full[y] and image[y][col_num] != '#':
-                image[y][col_num] = '#'
-                changes.append((col_num, y))
-                anything_changed = True
-            elif all_empty[y] and image[y][col_num] != '.':
-                image[y][col_num] = '.'
-                changes.append((col_num, y))
-                anything_changed = True
-    return image, True, anything_changed, changes
+# def step(image, rows, cols, all_rows, all_cols, changed):
+#     image = deepcopy(image)
+#     width = len(cols)
+#     height = len(rows)
+#     anything_changed = False
+#     changes = []
+#     if changed == 'all':
+#         row_nums = range(height)
+#         col_nums = range(width)
+#     else:
+#         row_nums = set(c[1] for c in changed)
+#         col_nums = set(c[0] for c in changed)
+#     # rows
+#     for row_num in row_nums:
+#         row = image[row_num]
+#         row_ch = rows[row_num]
+#         len_row = len(row)
+#         all_full = [True for _ in range(len_row)]
+#         all_empty = [True for _ in range(len_row)]
+#         any_legal = False
+#         for arr in all_rows[row_num]:
+#             if legal(arr, row):
+#                 any_legal = True
+#                 all_full = [all_full[x] and arr[x]=='#' for x in range(len_row)]
+#                 all_empty = [all_empty[x] and arr[x]=='.' for x in range(len_row)]
+#         if not any_legal:
+#             return image, False, anything_changed, changes
+#         for x in range(len_row):
+#             if all_full[x] and image[row_num][x] != '#':
+#                 image[row_num][x] = '#'
+#                 changes.append((x, row_num))
+#                 anything_changed = True
+#             elif all_empty[x] and image[row_num][x] != '.':
+#                 image[row_num][x] = '.'
+#                 changes.append((x, row_num))
+#                 anything_changed = True
+#     # cols
+#     imageT = T(image) #transpose
+#     for col_num in col_nums:
+#         col = imageT[col_num]
+#         col_ch = cols[col_num]
+#         len_col = len(col)
+#         all_full = [True for _ in range(len_col)]
+#         all_empty = [True for _ in range(len_col)]
+#         any_legal = False
+#         for arr in all_cols[col_num]:
+#             if legal(arr, col):
+#                 any_legal = True
+#                 all_full = [all_full[y] and arr[y] == '#' for y in range(len_col)]
+#                 all_empty = [all_empty[y] and arr[y] == '.' for y in range(len_col)]
+#         if not any_legal:
+#             return image, False, anything_changed, changes
+#         for y in range(len_col):
+#             if all_full[y] and image[y][col_num] != '#':
+#                 image[y][col_num] = '#'
+#                 changes.append((col_num, y))
+#                 anything_changed = True
+#             elif all_empty[y] and image[y][col_num] != '.':
+#                 image[y][col_num] = '.'
+#                 changes.append((col_num, y))
+#                 anything_changed = True
+#     return image, True, anything_changed, changes
 
-@timeit
+# @timeit
 def filter_domains(image, all_rows, all_cols, debug=False):
     imageT = T(image)
     all_rows = [[r for r in all_rows[y] if legal(r, image[y])] for y in range(len(all_rows))]
@@ -132,8 +132,6 @@ def consequences(image, rows, cols, all_rows, all_cols, safe=False): # returns i
     queue = []
     if not safe:
         image = deepcopy(image)
-        all_rows = all_rows.copy()
-        all_cols = all_cols.copy()
     for y in range(len(image)):
         heappush(queue, (0, 'row', y))
     for x in range(len(image[0])):
@@ -156,8 +154,6 @@ def consequences(image, rows, cols, all_rows, all_cols, safe=False): # returns i
                                 all_full[x] = arr[x]=='#'
                             if all_empty[x]:
                                 all_empty[x] = arr[x]=='.'
-                else:
-                    pass #remove arr from all_rows
             if not any_legal:
                 return image, False
             for x in range(len_row):
@@ -177,7 +173,7 @@ def consequences(image, rows, cols, all_rows, all_cols, safe=False): # returns i
             all_empty = [True for _ in range(len_col)]
             any_legal = False
             for arr in all_cols[num]:
-                if True or legal(arr, col):
+                if legal(arr, col):
                     any_legal = True
                     for y in range(len_col):
                         if image[y][num] == '?':
@@ -199,8 +195,6 @@ def consequences(image, rows, cols, all_rows, all_cols, safe=False): # returns i
                         counter += 1
     return image, True
 
-# cwiczenie wykorzystac mutable named parameter as cache in heappush - decorate it
-
 def nonogram(rows, cols):
     width = len(cols)
     height = len(rows)
@@ -210,7 +204,7 @@ def nonogram(rows, cols):
     print(f'all cols calculated: {[len(c) for c in all_cols]}')
     print(f'sum: {sum([len(r) for r in all_rows]) + sum([len(c) for c in all_cols])}')
     image = [['?' for _ in range(width)] for _ in range(height)]
-    image, _ = consequences(image, rows, cols, all_rows, all_cols)
+    image, _ = consequences(image, rows, cols, all_rows, all_cols, safe=True)
     draw(image)
     image, _ = backtrack(image, rows, cols, all_rows, all_cols)
     image, _ = backtrack(image, rows, cols, all_rows, all_cols)
@@ -234,13 +228,13 @@ def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=25):
                     image[y][x] = '?'
         if counter >= filter_interval:
             all_rows, all_cols = filter_domains(image, all_rows, all_cols, True)
-            image, possible = consequences(image, rows, cols, all_rows, all_cols)
+            image, possible = consequences(image, rows, cols, all_rows, all_cols, safe=True)
             timeit('SHOW')
             draw(image)
             counter = -1
         counter += 1
                 
-    image, possible = consequences(image, rows, cols, all_rows, all_cols)
+    image, possible = consequences(image, rows, cols, all_rows, all_cols, safe=True)
     return image, possible
 
 def draw(image):
