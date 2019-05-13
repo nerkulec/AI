@@ -236,7 +236,7 @@ def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=10):
                 else:
                     image[y][x] = '?'
             else:
-                points.extend(get_neigbors(x, y, image))
+                points.extend([(0,n) for n in get_neigbors(x, y, image)])
         if counter >= filter_interval:
             all_rows, all_cols = filter_domains(image, all_rows, all_cols, True)
             image, possible = consequences(image, rows, cols, all_rows, all_cols, safe=True)
