@@ -3,6 +3,8 @@
 import numpy as np
 from tqdm import tqdm
 from itertools import product
+from heapq import heappush, heappop
+from util import timeit, cacheit
 
 # #- pewny pełny
 # .- pewny pusty
@@ -11,6 +13,7 @@ from itertools import product
 def T(image): #transpose
     return list(map(list, zip(*image)))
 
+@timeit
 def deepcopy(thing):
     try:
         return [deepcopy(el) for el in thing.copy()]
@@ -30,6 +33,7 @@ def all_arrangements(len_row, ch):
     for arr in h(len_row+1, ch):
         yield list(arr[:-1])
 
+@timeit
 def legal(arr, row):
     for i in range(len(row)):
         if arr[i] == '#' and row[i] == '.':
@@ -101,6 +105,7 @@ def step(image, rows, cols, all_rows, all_cols, changed):
                 anything_changed = True
     return image, True, anything_changed, changes
 
+@timeit
 def filter_domains(image, all_rows, all_cols, debug=False):
     imageT = T(image)
     all_rows = [[r for r in all_rows[y] if legal(r, image[y])] for y in range(len(all_rows))]
@@ -113,14 +118,88 @@ def filter_domains(image, all_rows, all_cols, debug=False):
         print(f'sum: {sum(possible_rows) + sum(possible_cols)}')
     return all_rows, all_cols
 
-def consequences(image, rows, cols, all_rows, all_cols): # returns image, solved, possible
-    possible = True
-    changes = 'all'
-    while any(any(p == '?' for p in row) for row in image):
-        image, possible, anything_changed, changes = step(image, rows, cols, all_rows, all_cols, changes)
-        if not possible or not anything_changed:
-            return image, False, possible
-    return image, True, possible
+# def consequences(image, rows, cols, all_rows, all_cols): # returns image, solved, possible
+#     possible = True
+#     changes = 'all'
+#     while any(any(p == '?' for p in row) for row in image):
+#         image, possible, anything_changed, changes = step(image, rows, cols, all_rows, all_cols, changes)
+#         if not possible or not anything_changed:
+#             return image, False, possible
+#     return image, True, possible
+
+@timeit
+def consequences(image, rows, cols, all_rows, all_cols, safe=False): # returns image, possible
+    queue = []
+    if not safe:
+        image = deepcopy(image)
+        all_rows = all_rows.copy()
+        all_cols = all_cols.copy()
+    for y in range(len(image)):
+        heappush(queue, (0, 'row', y))
+    for x in range(len(image[0])):
+        heappush(queue, (0, 'col', x))
+    counter = 1
+    while queue:
+        _, t, num = heappop(queue)
+        if t == 'row':
+            row = image[num]
+            len_row = len(row)
+            all_full = [True for _ in range(len_row)]
+            all_empty = [True for _ in range(len_row)]
+            any_legal = False
+            for arr in all_rows[num]:
+                if legal(arr, row):
+                    any_legal = True
+                    for x in range(len_row):
+                        if image[num][x] == '?':
+                            if all_full[x]:
+                                all_full[x] = arr[x]=='#'
+                            if all_empty[x]:
+                                all_empty[x] = arr[x]=='.'
+                else:
+                    pass #remove arr from all_rows
+            if not any_legal:
+                return image, False
+            for x in range(len_row):
+                if image[num][x] == '?':
+                    if all_full[x] and image[num][x] != '#':
+                        image[num][x] = '#'
+                        heappush(queue, (counter, 'col', x))
+                        counter += 1
+                    elif all_empty[x] and image[num][x] != '.':
+                        image[num][x] = '.'
+                        heappush(queue, (counter, 'col', x))
+                        counter += 1
+        elif t == 'col':
+            col = [image[y][num] for y in range(len(image))]
+            len_col = len(col)
+            all_full = [True for _ in range(len_col)]
+            all_empty = [True for _ in range(len_col)]
+            any_legal = False
+            for arr in all_cols[num]:
+                if True or legal(arr, col):
+                    any_legal = True
+                    for y in range(len_col):
+                        if image[y][num] == '?':
+                            if all_full[y]:
+                                all_full[y] = arr[y]=='#'
+                            if all_empty[y]:
+                                all_empty[y] = arr[y]=='.'
+            if not any_legal:
+                return image, False
+            for y in range(len_col):
+                if image[y][num] == '?':
+                    if all_full[y]:
+                        image[y][num] = '#'
+                        heappush(queue, (counter, 'row', y))
+                        counter += 1
+                    elif all_empty[y]:
+                        image[y][num] = '.'
+                        heappush(queue, (counter, 'row', y))
+                        counter += 1
+    return image, True
+
+# cwiczenie wykorzystac mutable named parameter as cache in heappush - decorate it
 
 def nonogram(rows, cols):
     width = len(cols)
@@ -129,39 +208,40 @@ def nonogram(rows, cols):
     print(f'all rows calculated: {[len(r) for r in all_rows]}')
     all_cols = [[hyp_col for hyp_col in all_arrangements(height, cols[x])] for x in range(width)]
     print(f'all cols calculated: {[len(c) for c in all_cols]}')
+    print(f'sum: {sum([len(r) for r in all_rows]) + sum([len(c) for c in all_cols])}')
     image = [['?' for _ in range(width)] for _ in range(height)]
-    image, solved, possible = consequences(image, rows, cols, all_rows, all_cols)
-    if solved:
-        return image
-    image, solved = backtrack(image, rows, cols, all_rows, all_cols)
+    image, _ = consequences(image, rows, cols, all_rows, all_cols)
+    draw(image)
+    image, _ = backtrack(image, rows, cols, all_rows, all_cols)
+    image, _ = backtrack(image, rows, cols, all_rows, all_cols)
     draw(image)
     return image
 
 def backtrack(image, rows, cols, all_rows, all_cols, filter_interval=25):
     points = product(range(len(cols)), range(len(rows)))
-    points = sorted(points, key=lambda p: -abs(p[0]-len(cols)/2) - abs(p[1]-len(rows)/2))
+    points = sorted(points, key=lambda p: min(-abs(p[0]-len(cols)/2), -abs(p[1]-len(rows)/2)))
     counter = 0
     for x,y in points:
         if image[y][x] == '?':
             image[y][x] = '#'
-            _, _, possible = consequences(image, rows, cols, all_rows, all_cols)
+            _, possible = consequences(image, rows, cols, all_rows, all_cols)
             image[y][x] = '.'
             if possible:
-                _, _, possible = consequences(image, rows, cols, all_rows, all_cols)
+                _, possible = consequences(image, rows, cols, all_rows, all_cols)
                 if not possible:
                     image[y][x] = '#'
                 else:
                     image[y][x] = '?'
         if counter >= filter_interval:
             all_rows, all_cols = filter_domains(image, all_rows, all_cols, True)
-            image, solved, possible = consequences(image, rows, cols, all_rows, all_cols)
-            if solved: break
+            image, possible = consequences(image, rows, cols, all_rows, all_cols)
+            timeit('SHOW')
             draw(image)
             counter = -1
         counter += 1
                 
-    image, solved, _ = consequences(image, rows, cols, all_rows, all_cols)
-    return image, solved
+    image, possible = consequences(image, rows, cols, all_rows, all_cols)
+    return image, possible
 
 def draw(image):
     for y in range(len(image)):
