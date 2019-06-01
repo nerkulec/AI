@@ -41,15 +41,12 @@ def draw_dists(dists):
         print()
 
 def search(board, comandos, goals, alpha=1):
-    # queue = [] # (priority, history, board)
-    queue = Heap()
+    queue = [] # (priority, history, board)
     seen = set() # comandos
-    # heappush(queue, (0, '', comandos))
-    queue.push((0, '', comandos))
+    heappush(queue, (0, '', comandos))
     heuristic = get_heuristic(board, goals)
-    while len(queue.tab)>1:
-        # _, history, comandos = heappop(queue)
-        _, history, comandos = queue.pop()
+    while queue:
+        _, history, comandos = heappop(queue)
         if all(com in goals for com in comandos):
             return history
         for direction in range(4):
@@ -58,8 +55,7 @@ def search(board, comandos, goals, alpha=1):
                 continue
             new_history = history + 'RDLU'[direction]
             new_priority = len(new_history) + alpha*heuristic(new_comandos)
-            # heappush(queue, (new_priority, new_history, new_comandos))
-            queue.push((new_priority, new_history, new_comandos))
+            heappush(queue, (new_priority, new_history, new_comandos))
             seen.add(new_comandos)
 
 with open("zad_input.txt", "r") as in_f:
