@@ -128,6 +128,7 @@ should_be = {
    'task1.txt' : 78.0,
    'task2.txt' : 33.79,
    'task3.txt' : 92.1,
+   'task4.txt' : 92.1,
    'task6.txt' : 30.0,
    'task8.txt' : 62.0,
    'task9.txt' : 61.0,
@@ -147,7 +148,7 @@ for runs in range(R):
     cnt = 0
     t = 0
     utility = 0.0
-    while t < 1000:
+    while t < 100: # changed from 1000
         if y < 0 or y >= len(B) or x < 0 or x >= len(B[y]) or B[y][x] == ".":
             utility -= 100 * GAMMA ** t
             break
