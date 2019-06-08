@@ -22,7 +22,6 @@ class Reversi:
         self.turn, self.other = 1, 0
         self.width, self.height = 8, 8
         self.dirs = [Pos(1,0), Pos(1,1), Pos(0,1), Pos(-1,1), Pos(-1,0), Pos(-1,-1), Pos(0,-1), Pos(1,-1)]
-        self.availible_moves = {}
         self.history = []
         self.history_ends = []
         self.board = [[None for _ in range(8)] for _ in range(8)]
@@ -31,6 +30,15 @@ class Reversi:
         self.board[4][3] = 0
         self.board[3][4] = 0
         self.tiles = set(Pos(x,y) for x in range(8) for y in range(8) if self.board[y][x] is None)
+
+    def copy(self):
+        cpy = Reversi()
+        cpy.turn, cpy.other = self.turn, self.other
+        cpy.history = self.history.copy()
+        cpy.history_ends = self.history_ends
+        cpy.board = [row.copy() for row in self.board]
+        cpy.tiles = self.tiles.copy()
+        return cpy
         
     def __getitem__(self, pos):
         if 0<=pos[0]<self.width and 0<=pos[1]<self.height:
