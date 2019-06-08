@@ -1,10 +1,18 @@
 # DEPTH=2 achieves 984-16 in 2 minutes
 
 from random import randrange
-# from tqdm import tqdm
-# from util import Pos, timeit, cacheit
-from util_pypy import Pos, timeit, cacheit
-tqdm = lambda x: x
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(iterable):
+        l = len(iterable)
+        for i, e in enumerate(iterable):
+            print('{}/{}'.format(i, l))
+            yield e
+try:
+    from util import Pos, cacheit, timeit
+except:
+    from util_pypy import Pos, cacheit, timeit
 
 availible_moves = {}
 
@@ -40,11 +48,6 @@ class Reversi:
             pos += d
             flipped = True
         return flipped and self[pos] == self.turn
-
-    # def get_moves(self):
-    #     for pos in self.tiles:
-    #         if any(self.beats(pos, d) for d in self.dirs):
-    #             yield pos
 
     @timeit
     def get_moves(self):
@@ -121,6 +124,11 @@ class Reversi:
                 stable.add(pos)
                 pos += up
         return stable
+
+    @timeit
+    def simulate(self, history):
+        for move in history:
+            self.move(history)
 
     @timeit
     def move(self, pos): # supply None if no move is possible
