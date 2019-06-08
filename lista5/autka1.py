@@ -105,7 +105,6 @@ class Value:
                         old_value = 0
                     else:
                         old_value = old_values[new_s]
-                    r *= gamma
                     value += T(s, a, new_s)*(r+gamma*old_value)
                 if value>max_value:
                     max_value = value
@@ -116,12 +115,9 @@ class Value:
         q = 0
         for new_s in next_S(s, a):
             if new_s in S:
-                q += T(s, a, new_s)*self.values[new_s]
+                q += T(s, a, new_s)*(reward(s, a, new_s) + gamma*self.values[new_s])
             else:
-                if reward(s, a, new_s) == 100:
-                    q += T(s, a, new_s)*100
-                else:
-                    q += T(s, a, new_s)*-100
+                q += T(s, a, new_s)*reward(s, a, new_s)
         return q
 
     def get_policy(self):
@@ -135,8 +131,7 @@ class Value:
         
 
 if __name__ == '__main__':
-    # for track_num in [1,2,3,6,8,9,10,11]:
-    for track_num in [1]:
+    for track_num in [1,2,3,6,8,9,10,11]:
         with open('chars_test1/task{}.txt'.format(track_num)) as f:
             track = []
             for line in f:
