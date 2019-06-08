@@ -286,27 +286,27 @@ def alphabeta_move(board):
     value, move = alphabeta(board, 2, original=True)
     return move
 
-timeit('START')
+if __name__ == '__main__':
+    timeit('START')
 
-max_wins = 0
-min_wins = 0
-differences = []
-players = (alphabeta_move, random_move)
-for _ in tqdm(range(1000)):
-    print(_)
-    game = Reversi()
-    for move in range(60):
-        mv = players[move%2](game)
-        game.move(mv)
-        if game.terminal():
-            break
-        # game.draw()
-    if game.difference() > 0:
-        max_wins += 1
-    else:
-        min_wins += 1
-    differences.append(game.difference())
-print(max_wins, min_wins)
-# print(differences)
+    max_wins = 0
+    min_wins = 0
+    differences = []
+    players = (alphabeta_move, random_move)
+    for _ in tqdm(range(1000)):
+        print(_)
+        game = Reversi()
+        for move in range(60):
+            mv = players[move%2](game)
+            game.move(mv)
+            if game.terminal():
+                break
+            # game.draw()
+        if game.difference() > 0:
+            max_wins += 1
+        else:
+            min_wins += 1
+        differences.append(game.difference())
+    print(max_wins, min_wins)
 
-timeit('SHOW')
+    timeit('SHOW')
