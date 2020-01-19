@@ -19,7 +19,7 @@ availible_moves = {}
 # 1 is max, 0 is min
 class Reversi:
     def __init__(self):
-        self.turn, self.other = 1, 0
+        self.turn, self.other = 1, 0 # 1 starts
         self.width, self.height = 8, 8
         self.dirs = [Pos(1,0), Pos(1,1), Pos(0,1), Pos(-1,1), Pos(-1,0), Pos(-1,-1), Pos(0,-1), Pos(1,-1)]
         self.history = []
@@ -57,7 +57,7 @@ class Reversi:
             flipped = True
         return flipped and self[pos] == self.turn
 
-    @timeit
+    # @timeit
     def get_moves(self):
         global availible_moves
         h = self.__hash__()+self.turn
@@ -68,10 +68,11 @@ class Reversi:
             for pos in self.tiles:
                 if any(self.beats(pos, d) for d in self.dirs):
                     moves.append(pos)
-            availible_moves[h] = moves
+            if len(availible_moves) < 10000000:
+                availible_moves[h] = moves
             return moves
 
-    @timeit
+    # @timeit
     def get_enemy_moves(self):
         global availible_moves
         h = self.__hash__()+self.other
@@ -84,10 +85,11 @@ class Reversi:
                 if any(self.beats(pos, d) for d in self.dirs):
                     moves.append(pos)
             self.turn, self.other = self.other, self.turn
-            availible_moves[h] = moves
+            if len(availible_moves) < 10000000:
+                availible_moves[h] = moves
             return moves
 
-    @timeit
+    # @timeit
     def get_stable(self, player):
         stable = set()
         right, down, left, up = Pos(1,0), Pos(0,1), Pos(-1,0), Pos(0,-1)
@@ -133,12 +135,12 @@ class Reversi:
                 pos += up
         return stable
 
-    @timeit
+    # @timeit
     def simulate(self, history):
         for move in history:
-            self.move(history)
+            self.move(move)
 
-    @timeit
+    # @timeit
     def move(self, pos): # supply None if no move is possible
         if pos is None:
             self.turn, self.other = self.other, self.turn
@@ -166,7 +168,7 @@ class Reversi:
         self[pos] = self.turn
         self.turn, self.other = self.other, self.turn
 
-    @timeit
+    # @timeit
     def undo_move(self):
         pos = self.history.pop()
         ends = self.history_ends.pop()
@@ -174,14 +176,14 @@ class Reversi:
         if pos is None:
             return
         self.tiles.add(pos)
-        self[pos] = '.'
+        self[pos] = None
         for d, end in zip(self.dirs, ends):
             npos = pos + d
             while npos != end:
                 self[npos] = self.other
                 npos += d
 
-    @timeit
+    # @timeit
     def terminal(self):
         if len(self.history) < 8:
             return False
@@ -189,13 +191,17 @@ class Reversi:
             return True
         if len(self.tiles) == 0:
             return True
-        if len(self.history) >= 60:
+        if sum(1 for move in self.history if move is not None) >= 60: 
             return True
         return False
 
-    @timeit
+    # @timeit
     def difference(self):
         return sum(1 if self[x,y]==1 else -1 if self[x,y]==0 else 0 for x in range(8) for y in range(8))
+
+    def winner(self): # assuma game ended
+        diff = self.difference()
+        return 1 if diff > 0 else 0 if diff < 0 else 0.5
 
     def draw(self):
         for y in range(self.height):
@@ -209,7 +215,7 @@ class Reversi:
         return hash(''.join('.' if self.board[y][x] is None else str(self.board[y][x]) for x in range(self.width) for y in range(self.height)))
 
 def random_move(board):
-    r = list(board.get_moves())
+    r = board.get_moves()
     if not r:
         return None
     return r[randrange(0,len(r))]
@@ -244,14 +250,15 @@ def heuristic(board: Reversi):
     if len(board.history) > 54:
         domination = board.difference()
 
-    if len(board.history) < 54: # 54
+    if len(board.history) < 54:
         stability = len(board.get_stable(1)) - len(board.get_stable(0))
 
-    # print(positioning, mobility, domination, stability)
     return positioning*p + mobility*m + domination*d + stability*s
         
 
-def alphabeta(board, depth, alpha=float('-inf'), beta=float('inf'), turn='max', other='min', original=False):
+def alphabeta(board, depth, turn, other, alpha=float('-inf'), beta=float('inf'), original=False):
+    # turn = board.turn
+    # other = board.other
     if board.terminal():
         diff = board.difference()
         if diff > 0:
@@ -262,12 +269,12 @@ def alphabeta(board, depth, alpha=float('-inf'), beta=float('inf'), turn='max', 
             return 0
     if depth == 0:
         return heuristic(board)
-    if turn == 'max':
+    if turn == 1:
         best = float('-inf')
         best_move = None
         for mv in board.get_moves():
             board.move(mv)        
-            value = alphabeta(board, depth-1, alpha, beta, other, turn)
+            value = alphabeta(board, depth-1, other, turn, alpha, beta)
             board.undo_move()
             if value > best:
                 best = value
@@ -283,7 +290,7 @@ def alphabeta(board, depth, alpha=float('-inf'), beta=float('inf'), turn='max', 
         best_move = None
         for mv in board.get_moves():
             board.move(mv)
-            value = alphabeta(board, depth-1, alpha, beta, other, turn)
+            value = alphabeta(board, depth-1, other, turn, alpha, beta)
             board.undo_move()
             if value < best:
                 best = value
@@ -295,11 +302,15 @@ def alphabeta(board, depth, alpha=float('-inf'), beta=float('inf'), turn='max', 
             return best, best_move
         return best
 
-def alphabeta_move(board):
-    moves = list(board.get_moves())
+@timeit
+def alphabeta_move(board, depth=4):
+    moves = board.get_moves()
     if len(moves) == 0:
         return None
-    value, move = alphabeta(board, 2, original=True)
+    # elif len(moves) == 1:
+    #     return moves[0]
+    value, move = alphabeta(board, depth, turn=board.turn, other=board.other, original=True)
+    # assert move is not None
     return move
 
 if __name__ == '__main__':
@@ -308,11 +319,10 @@ if __name__ == '__main__':
     max_wins = 0
     min_wins = 0
     differences = []
-    players = (alphabeta_move, random_move)
-    for _ in tqdm(range(1000)):
-        print(_)
+    players = (random_move, alphabeta_move)
+    for _ in tqdm(range(40)):
         game = Reversi()
-        for move in range(60):
+        for move in range(70):
             mv = players[move%2](game)
             game.move(mv)
             if game.terminal():
